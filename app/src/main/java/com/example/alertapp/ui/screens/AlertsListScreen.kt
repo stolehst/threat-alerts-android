@@ -89,7 +89,7 @@ fun AlertsListScreen(
                     color = MaterialTheme.colorScheme.error
                 )
                 alerts.isEmpty() -> Text(
-                    text = "Немає алертів",
+                    text = "Brak alertów",
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(16.dp),

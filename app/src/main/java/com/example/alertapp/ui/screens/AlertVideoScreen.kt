@@ -39,7 +39,7 @@ fun AlertVideoScreen(alertId: String, onBack: () -> Unit) {
     LaunchedEffect(alertId) {
         if (alertId.isBlank()) {
             loading = false
-            error = "Невідомий алерт"
+            error = "Nieznany alert"
             return@LaunchedEffect
         }
         loading = true
@@ -48,19 +48,19 @@ fun AlertVideoScreen(alertId: String, onBack: () -> Unit) {
             try {
                 val id = alertId.toIntOrNull()
                 if (id == null) {
-                    error = "Невірний ID алерта"
+                    error = "Nieprawidłowe ID alertu"
                     loading = false
                     return@withContext
                 }
                 val response = ApiProvider.alertApi.getAlertVideoUrl(id)
                 if (response.isSuccessful) {
                     videoUrl = response.body()?.url
-                    if (videoUrl.isNullOrBlank()) error = "Відео недоступне"
+                    if (videoUrl.isNullOrBlank()) error = "Wideo niedostępne"
                 } else {
-                    error = "Помилка завантаження"
+                    error = "Błąd ładowania"
                 }
             } catch (e: Exception) {
-                error = e.message ?: "Помилка мережі"
+                error = e.message ?: "Błąd sieci"
             }
             loading = false
         }
@@ -69,7 +69,7 @@ fun AlertVideoScreen(alertId: String, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Алерт") },
+                title = { Text("Alert") },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Text("←") }
                 }

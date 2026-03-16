@@ -29,7 +29,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Налаштування") },
+                title = { Text("Ustawienia") },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Text("←") }
                 }
@@ -41,7 +41,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 modifier = Modifier.padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Увімкнені сповіщення", modifier = Modifier.weight(1f))
+                Text("Powiadomienia", modifier = Modifier.weight(1f))
                 Switch(
                     checked = notificationsEnabled,
                     onCheckedChange = { notificationsEnabled = it }
@@ -56,7 +56,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 },
                 modifier = Modifier.padding(top = 16.dp)
             ) {
-                Text("Повторно зареєструвати пристрій")
+                Text("Ponownie zarejestruj urządzenie")
             }
         }
     }
