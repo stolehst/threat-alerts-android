@@ -1,6 +1,7 @@
 package com.example.alertapp.ui.screens
 
 import android.view.ViewGroup
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -25,7 +26,12 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TopAppBarDefaults
 import com.example.alertapp.api.ApiProvider
+import com.example.alertapp.ui.theme.CardSurface
+import com.example.alertapp.ui.theme.DarkBackground
+import com.example.alertapp.ui.theme.OnDarkBackground
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -67,12 +73,17 @@ fun AlertVideoScreen(alertId: String, onBack: () -> Unit) {
     }
 
     Scaffold(
+        containerColor = DarkBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Alert") },
+                title = { Text("Alert", color = OnDarkBackground) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Text("←") }
-                }
+                    IconButton(onClick = onBack) { Text("←", color = OnDarkBackground) }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = CardSurface,
+                    titleContentColor = OnDarkBackground
+                )
             )
         }
     ) { padding ->
@@ -80,12 +91,14 @@ fun AlertVideoScreen(alertId: String, onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .background(DarkBackground)
         ) {
             when {
                 loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 error != null -> Text(
                     text = error!!,
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier.align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 videoUrl != null -> ExoPlayerContent(url = videoUrl!!)
             }

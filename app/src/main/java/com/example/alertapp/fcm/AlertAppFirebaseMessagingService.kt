@@ -12,10 +12,7 @@ import com.example.alertapp.R
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
-/**
- * Обробка FCM: отримання токена, показ пуш-сповіщень (тип загрози + час),
- * по кліку — відкриття екрану алерта або списку.
- */
+
 class AlertAppFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
