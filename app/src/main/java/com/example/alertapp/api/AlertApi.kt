@@ -26,6 +26,9 @@ interface AlertApi {
     @GET("api/alerts")
     suspend fun getAlerts(): Response<AlertListResponse>
 
+    @GET("api/alerts/{id}")
+    suspend fun getAlert(@Path("id") id: Int): Response<AlertItem>
+
     @GET("api/alerts/{id}/video")
     suspend fun getAlertVideoUrl(@Path("id") id: Int): Response<VideoUrlResponse>
 }

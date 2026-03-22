@@ -6,16 +6,19 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.alertapp.ui.screens.AlertDetailScreen
 import com.example.alertapp.ui.screens.AlertsListScreen
 import com.example.alertapp.ui.screens.AlertVideoScreen
 import com.example.alertapp.ui.screens.SettingsScreen
 
 object Routes {
     const val ALERTS = "alerts"
-    const val ALERT_VIDEO = "alerts/{alertId}"
+    const val ALERT_DETAIL = "alert/{alertId}/detail"
+    const val ALERT_VIDEO = "alert/{alertId}/video"
     const val SETTINGS = "settings"
 
-    fun alertVideo(alertId: String) = "alerts/$alertId"
+    fun alertDetail(id: String) = "alert/$id/detail"
+    fun alertVideo(id: String) = "alert/$id/video"
 }
 
 @Composable
@@ -25,17 +28,28 @@ fun AlertAppNav(
 ) {
     NavHost(
         navController = navController,
-        startDestination = if (!startAlertId.isNullOrBlank()) Routes.alertVideo(startAlertId) else Routes.ALERTS
+        startDestination = if (!startAlertId.isNullOrBlank()) Routes.alertDetail(startAlertId) else Routes.ALERTS
     ) {
         composable(Routes.ALERTS) {
             AlertsListScreen(
-                onAlertClick = { id -> navController.navigate(Routes.alertVideo(id)) },
+                onAlertClick = { id -> navController.navigate(Routes.alertDetail(id)) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) }
             )
         }
         composable(
-            route = Routes.ALERT_VIDEO,
+            route = Routes.ALERT_DETAIL,
             arguments = listOf(navArgument("alertId") { defaultValue = startAlertId ?: "" })
+        ) { backStackEntry ->
+            val alertId = backStackEntry.arguments?.getString("alertId") ?: ""
+            AlertDetailScreen(
+                alertId = alertId,
+                onBack = { navController.popBackStack() },
+                onOpenVideo = { navController.navigate(Routes.alertVideo(alertId)) }
+            )
+        }
+        composable(
+            route = Routes.ALERT_VIDEO,
+            arguments = listOf(navArgument("alertId") { defaultValue = "" })
         ) { backStackEntry ->
             val alertId = backStackEntry.arguments?.getString("alertId") ?: ""
             AlertVideoScreen(alertId = alertId, onBack = { navController.popBackStack() })

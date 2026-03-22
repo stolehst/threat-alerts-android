@@ -24,6 +24,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,6 +45,8 @@ import com.example.alertapp.ui.theme.AlertRed
 import com.example.alertapp.ui.theme.CardSurface
 import com.example.alertapp.ui.theme.DarkBackground
 import com.example.alertapp.ui.theme.OnDarkBackground
+import com.example.alertapp.ui.formatDetectedAtLabel
+import com.example.alertapp.ui.formatThreatTypeLabel
 import com.example.alertapp.ui.theme.OnDarkMuted
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -55,11 +59,18 @@ fun AlertsListScreen(
 ) {
     var alerts by remember { mutableStateOf<List<AlertItem>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    var isRefreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var refreshTrigger by remember { mutableStateOf(0) }
+    val pullRefreshState = rememberPullToRefreshState()
 
     LaunchedEffect(refreshTrigger) {
-        loading = true
+        val isPullOrButton = refreshTrigger > 0
+        if (isPullOrButton) {
+            isRefreshing = true
+        } else {
+            loading = true
+        }
         error = null
         withContext(Dispatchers.IO) {
             try {
@@ -73,6 +84,7 @@ fun AlertsListScreen(
                 error = e.message ?: "Błąd sieci"
             }
             loading = false
+            isRefreshing = false
         }
     }
 
@@ -92,9 +104,6 @@ fun AlertsListScreen(
                     titleContentColor = OnDarkBackground
                 ),
                 actions = {
-                    IconButton(onClick = { refreshTrigger++ }) {
-                        Text("↻", style = MaterialTheme.typography.titleLarge, color = OnDarkBackground)
-                    }
                     IconButton(onClick = onOpenSettings) {
                         Text("⚙", style = MaterialTheme.typography.titleLarge, color = OnDarkBackground)
                     }
@@ -102,7 +111,10 @@ fun AlertsListScreen(
             )
         }
     ) { padding ->
-        Box(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { refreshTrigger++ },
+            state = pullRefreshState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
@@ -163,7 +175,7 @@ private fun AlertListItem(alert: AlertItem, onClick: () -> Unit) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = formatDetectedAt(alert.detected_at),
+                    text = formatDetectedAtLabel(alert.detected_at),
                     style = MaterialTheme.typography.bodyMedium,
                     color = OnDarkMuted
                 )
@@ -181,7 +193,7 @@ private fun AlertListItem(alert: AlertItem, onClick: () -> Unit) {
                                 .background(AlertRed)
                         )
                         Text(
-                            text = formatThreatType(alert.threat_type),
+                            text = formatThreatTypeLabel(alert.threat_type),
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelMedium,
                             color = AlertRed
@@ -193,14 +205,3 @@ private fun AlertListItem(alert: AlertItem, onClick: () -> Unit) {
     }
 }
 
-private fun formatThreatType(type: String): String =
-    type.replaceFirstChar { if (it.isLowerCase()) it.uppercase() else it.toString() }
-
-private fun formatDetectedAt(iso: String): String {
-    if (!iso.contains("T")) return iso
-    val parts = iso.split("T")
-    val dateStr = parts.getOrNull(0) ?: return iso
-    val timeStr = parts.getOrNull(1)?.take(8) ?: return iso
-    val dateFormatted = dateStr.split("-").reversed().joinToString(".")
-    return "$timeStr · $dateFormatted"
-}

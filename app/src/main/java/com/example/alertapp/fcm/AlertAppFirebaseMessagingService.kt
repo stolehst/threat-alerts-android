@@ -17,7 +17,7 @@ class AlertAppFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        // Токен зберегти і відправити на бекенд (викликається також при реєстрації)
+
         DeviceTokenHolder.saveToken(this, token)
         DeviceRegistrationWorker.enqueueRegister(this, token)
     }
