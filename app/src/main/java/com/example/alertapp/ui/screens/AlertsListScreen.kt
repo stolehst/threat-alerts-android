@@ -134,32 +134,52 @@ fun AlertsListScreen(
                 .padding(padding)
                 .background(DarkBackground)
         ) {
-            when {
-                loading -> CircularProgressIndicator(
-                    Modifier.align(Alignment.Center),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                error != null -> Text(
-                    text = error!!,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(16.dp),
-                    color = MaterialTheme.colorScheme.error
-                )
-                alerts.isEmpty() -> Text(
-                    text = "Brak alertów",
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(16.dp),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = OnDarkMuted
-                )
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(alerts, key = { it.id }) { alert ->
+            // Pull-to-refresh потребує прокручуваного контенту; інакше не працює при «Brak alertów» / помилці / завантаженні
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = if (alerts.isNotEmpty() && !loading && error == null) {
+                    Arrangement.spacedBy(12.dp)
+                } else {
+                    Arrangement.spacedBy(0.dp)
+                }
+            ) {
+                when {
+                    loading -> item {
+                        Box(
+                            modifier = Modifier
+                                .fillParentMaxSize()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                    error != null -> item {
+                        Box(
+                            modifier = Modifier.fillParentMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = error!!,
+                                modifier = Modifier.padding(16.dp),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                    alerts.isEmpty() -> item {
+                        Box(
+                            modifier = Modifier.fillParentMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Brak alertów",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = OnDarkMuted
+                            )
+                        }
+                    }
+                    else -> items(alerts, key = { it.id }) { alert ->
                         AlertListItem(
                             alert = alert,
                             onClick = { onAlertClick(alert.id.toString()) }
