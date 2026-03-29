@@ -2,6 +2,7 @@ package com.example.alertapp.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -82,7 +83,10 @@ fun AlertsListScreen(
         // 2) Refresh from network and update cache
         try {
             val fresh = withContext(Dispatchers.IO) { repo.refreshAlertsFromNetwork() }
-            alerts = fresh
+            // Не затирати список порожньою відповіддю після pull-to-refresh (часта причина «все зникло»).
+            if (fresh.isNotEmpty() || alerts.isEmpty()) {
+                alerts = fresh
+            }
         } catch (e: Exception) {
             if (alerts.isEmpty()) {
                 error = e.message ?: "Błąd sieci"
@@ -101,7 +105,12 @@ fun AlertsListScreen(
                     Text(
                         stringResource(R.string.app_name),
                         color = OnDarkBackground,
-                        style = MaterialTheme.typography.titleLarge
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { /* поглинаємо тап, щоб не потрапляв у контент/pull під шапкою */ }
+                        )
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
