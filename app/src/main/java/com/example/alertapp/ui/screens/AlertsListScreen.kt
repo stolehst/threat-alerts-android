@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -57,6 +58,7 @@ fun AlertsListScreen(
     onAlertClick: (String) -> Unit,
     onOpenSettings: () -> Unit
 ) {
+    val context = LocalContext.current
     var alerts by remember { mutableStateOf<List<AlertItem>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var isRefreshing by remember { mutableStateOf(false) }
@@ -74,7 +76,7 @@ fun AlertsListScreen(
         error = null
         withContext(Dispatchers.IO) {
             try {
-                val response = ApiProvider.alertApi.getAlerts()
+                val response = ApiProvider.getAlertApi(context).getAlerts()
                 if (response.isSuccessful) {
                     alerts = response.body()?.alerts ?: emptyList()
                 } else {

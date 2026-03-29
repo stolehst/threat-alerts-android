@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import com.example.alertapp.fcm.DeviceRegistrationWorker
 import com.example.alertapp.fcm.DeviceTokenHolder
 import com.example.alertapp.fcm.AlertAppFirebaseMessagingService
+import com.example.alertapp.auth.AuthTokenStore
 import com.example.alertapp.ui.AlertAppNav
 import com.example.alertapp.ui.theme.AlertAppTheme
 import com.google.firebase.messaging.FirebaseMessaging
@@ -57,7 +58,10 @@ class MainActivity : ComponentActivity() {
                 if (!task.isSuccessful) return@addOnCompleteListener
                 task.result?.let { token ->
                     DeviceTokenHolder.saveToken(this, token)
-                    DeviceRegistrationWorker.enqueueRegister(this, token)
+                    // Backend now requires api_token; register only after activation
+                    if (!AuthTokenStore.getApiToken(this).isNullOrBlank()) {
+                        DeviceRegistrationWorker.enqueueRegister(this, token)
+                    }
                 }
             }
     }

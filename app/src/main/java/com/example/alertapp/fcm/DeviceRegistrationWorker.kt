@@ -22,7 +22,9 @@ class DeviceRegistrationWorker(
             ?: DeviceTokenHolder.getToken(applicationContext)
         if (token.isNullOrBlank()) return@withContext Result.failure()
         try {
-            val response = ApiProvider.alertApi.registerDevice(RegisterDeviceRequest(token))
+            val response = ApiProvider
+                .getAlertApi(applicationContext)
+                .registerDevice(RegisterDeviceRequest(fcm_token = token, name = "phone"))
             if (response.isSuccessful) Result.success() else Result.retry()
         } catch (e: Exception) {
             Result.retry()

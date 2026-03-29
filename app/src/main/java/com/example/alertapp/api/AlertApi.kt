@@ -6,7 +6,10 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 
-data class RegisterDeviceRequest(val fcm_token: String)
+data class RegisterDeviceRequest(val fcm_token: String, val name: String? = null)
+
+data class ActivateRequest(val code: String)
+data class ActivateResponse(val api_token: String, val active: Boolean, val paid_until: String?)
 
 data class AlertItem(
     val id: Int,
@@ -19,6 +22,9 @@ data class AlertItem(
 data class AlertListResponse(val alerts: List<AlertItem>)
 
 interface AlertApi {
+
+    @POST("api/activate")
+    suspend fun activate(@Body body: ActivateRequest): Response<ActivateResponse>
 
     @POST("api/device/register")
     suspend fun registerDevice(@Body body: RegisterDeviceRequest): Response<DeviceResponse>

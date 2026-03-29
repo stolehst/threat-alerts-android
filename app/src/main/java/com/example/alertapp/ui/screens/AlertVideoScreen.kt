@@ -46,6 +46,7 @@ fun AlertVideoScreen(alertId: String, onBack: () -> Unit) {
     var videoUrl by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
     LaunchedEffect(alertId) {
         if (alertId.isBlank()) {
@@ -63,7 +64,7 @@ fun AlertVideoScreen(alertId: String, onBack: () -> Unit) {
                     loading = false
                     return@withContext
                 }
-                val response = ApiProvider.alertApi.getAlertVideoUrl(id)
+                val response = ApiProvider.getAlertApi(context).getAlertVideoUrl(id)
                 if (response.isSuccessful) {
                     videoUrl = response.body()?.url
                     if (videoUrl.isNullOrBlank()) error = "Wideo niedostępne"

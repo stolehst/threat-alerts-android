@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,6 +54,7 @@ fun AlertDetailScreen(
     onBack: () -> Unit,
     onOpenVideo: () -> Unit
 ) {
+    val context = LocalContext.current
     var alert by remember { mutableStateOf<AlertItem?>(null) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -73,7 +75,7 @@ fun AlertDetailScreen(
         error = null
         withContext(Dispatchers.IO) {
             try {
-                val response = ApiProvider.alertApi.getAlert(id)
+                val response = ApiProvider.getAlertApi(context).getAlert(id)
                 if (response.isSuccessful) {
                     alert = response.body()
                     if (alert == null) error = "Brak danych alertu"

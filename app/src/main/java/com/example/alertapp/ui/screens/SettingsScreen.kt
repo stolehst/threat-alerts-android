@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
+import com.example.alertapp.auth.AuthTokenStore
 import com.example.alertapp.fcm.DeviceRegistrationWorker
 import com.example.alertapp.fcm.DeviceTokenHolder
 import com.example.alertapp.ui.theme.CardSurface
@@ -33,7 +34,7 @@ import com.example.alertapp.ui.theme.OnDarkBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit) {
     val context = LocalContext.current
     var notificationsEnabled by remember { mutableStateOf(true) }
 
@@ -79,6 +80,16 @@ fun SettingsScreen(onBack: () -> Unit) {
                     onCheckedChange = { notificationsEnabled = it }
                 )
             }
+            androidx.compose.material3.Button(
+                onClick = {
+                    AuthTokenStore.clear(context)
+                    onLogout()
+                },
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text("Wyloguj / Usuń aktywację")
+            }
+
             androidx.compose.material3.Button(
                 onClick = {
                     val token = DeviceTokenHolder.getToken(context)
