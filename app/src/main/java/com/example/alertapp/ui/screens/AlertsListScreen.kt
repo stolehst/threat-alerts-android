@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.example.alertapp.R
 import com.example.alertapp.api.AlertItem
-import com.example.alertapp.api.ApiProvider
+import com.example.alertapp.repo.AlertsRepository
 import com.example.alertapp.ui.theme.AlertRed
 import com.example.alertapp.ui.theme.CardSurface
 import com.example.alertapp.ui.theme.DarkBackground
@@ -59,6 +59,7 @@ fun AlertsListScreen(
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
+    val repo = remember { AlertsRepository(context.applicationContext) }
     var alerts by remember { mutableStateOf<List<AlertItem>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var isRefreshing by remember { mutableStateOf(false) }
@@ -74,17 +75,19 @@ fun AlertsListScreen(
             loading = true
         }
         error = null
-        withContext(Dispatchers.IO) {
-            try {
-                val response = ApiProvider.getAlertApi(context).getAlerts()
-                if (response.isSuccessful) {
-                    alerts = response.body()?.alerts ?: emptyList()
-                } else {
-                    error = "Błąd ładowania"
-                }
-            } catch (e: Exception) {
+        // 1) Show cached data immediately (if any)
+        val cached = withContext(Dispatchers.IO) { repo.getCachedAlerts() }
+        if (cached.isNotEmpty()) alerts = cached
+
+        // 2) Refresh from network and update cache
+        try {
+            val fresh = withContext(Dispatchers.IO) { repo.refreshAlertsFromNetwork() }
+            alerts = fresh
+        } catch (e: Exception) {
+            if (alerts.isEmpty()) {
                 error = e.message ?: "Błąd sieci"
             }
+        } finally {
             loading = false
             isRefreshing = false
         }

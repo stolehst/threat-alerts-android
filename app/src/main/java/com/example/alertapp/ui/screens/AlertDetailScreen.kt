@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.example.alertapp.api.AlertItem
-import com.example.alertapp.api.ApiProvider
+import com.example.alertapp.repo.AlertsRepository
 import com.example.alertapp.ui.formatDetectedAtLabel
 import com.example.alertapp.ui.formatThreatTypeLabel
 import com.example.alertapp.ui.theme.AlertRed
@@ -55,6 +55,7 @@ fun AlertDetailScreen(
     onOpenVideo: () -> Unit
 ) {
     val context = LocalContext.current
+    val repo = remember { AlertsRepository(context.applicationContext) }
     var alert by remember { mutableStateOf<AlertItem?>(null) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -73,18 +74,18 @@ fun AlertDetailScreen(
         }
         loading = true
         error = null
-        withContext(Dispatchers.IO) {
-            try {
-                val response = ApiProvider.getAlertApi(context).getAlert(id)
-                if (response.isSuccessful) {
-                    alert = response.body()
-                    if (alert == null) error = "Brak danych alertu"
-                } else {
-                    error = "Błąd ładowania"
-                }
-            } catch (e: Exception) {
-                error = e.message ?: "Błąd sieci"
-            }
+        // 1) Show cached first (if exists)
+        val cached = withContext(Dispatchers.IO) { repo.getCachedAlert(id) }
+        if (cached != null) alert = cached
+
+        // 2) Refresh from network and update cache
+        try {
+            val fresh = withContext(Dispatchers.IO) { repo.refreshAlertFromNetwork(id) }
+            alert = fresh
+            if (alert == null) error = "Brak danych alertu"
+        } catch (e: Exception) {
+            if (alert == null) error = e.message ?: "Błąd sieci"
+        } finally {
             loading = false
         }
     }
