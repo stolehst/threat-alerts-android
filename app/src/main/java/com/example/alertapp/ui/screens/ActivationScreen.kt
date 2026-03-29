@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.example.alertapp.api.ActivateRequest
 import com.example.alertapp.api.ApiProvider
 import com.example.alertapp.auth.AuthTokenStore
+import com.example.alertapp.db.AlertRoomCache
 import com.example.alertapp.fcm.DeviceRegistrationWorker
 import com.example.alertapp.fcm.DeviceTokenHolder
 import com.example.alertapp.ui.theme.CardSurface
@@ -68,6 +69,8 @@ fun ActivationScreen(onActivated: () -> Unit) {
             val token = result.first
             val err = result.second
             if (!token.isNullOrBlank()) {
+                // Інакше в Room лишаються алерти попереднього коду активації
+                withContext(Dispatchers.IO) { AlertRoomCache.clearAlerts(context) }
                 AuthTokenStore.setApiToken(context, token)
                 val fcm = DeviceTokenHolder.getToken(context)
                 if (!fcm.isNullOrBlank()) {

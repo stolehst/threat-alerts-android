@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +27,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.example.alertapp.auth.AuthTokenStore
+import com.example.alertapp.db.AlertRoomCache
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.example.alertapp.fcm.DeviceRegistrationWorker
 import com.example.alertapp.fcm.DeviceTokenHolder
 import com.example.alertapp.ui.theme.CardSurface
@@ -36,6 +41,7 @@ import com.example.alertapp.ui.theme.OnDarkBackground
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var notificationsEnabled by remember { mutableStateOf(true) }
 
     Scaffold(
@@ -82,8 +88,11 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit) {
             }
             androidx.compose.material3.Button(
                 onClick = {
-                    AuthTokenStore.clear(context)
-                    onLogout()
+                    scope.launch {
+                        withContext(Dispatchers.IO) { AlertRoomCache.clearAlerts(context) }
+                        AuthTokenStore.clear(context)
+                        onLogout()
+                    }
                 },
                 modifier = Modifier.padding(top = 8.dp)
             ) {
