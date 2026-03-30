@@ -37,6 +37,9 @@ class AlertAppFirebaseMessagingService : FirebaseMessagingService() {
             body = body,
             alertId = alertId
         )
+
+        // Variant A: sync cache immediately on push (no manual refresh needed)
+        AlertSyncWorker.enqueue(this, alertId.ifBlank { null })
     }
 
     private fun showNotification(title: String, body: String, alertId: String) {

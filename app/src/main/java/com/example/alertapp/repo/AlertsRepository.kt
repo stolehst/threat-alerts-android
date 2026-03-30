@@ -5,6 +5,8 @@ import com.example.alertapp.api.AlertItem
 import com.example.alertapp.api.ApiProvider
 import com.example.alertapp.db.AlertEntity
 import com.example.alertapp.db.AppDatabase
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class AlertsRepository(private val appContext: Context) {
 
@@ -37,6 +39,22 @@ class AlertsRepository(private val appContext: Context) {
         val alert = resp.body() ?: throw RuntimeException("Empty body")
         dao.upsert(alert.toEntity(System.currentTimeMillis()))
         return alert
+    }
+
+    fun observeAlertsFiltered(
+        threatType: String?,
+        fromIso: String?,
+        toIso: String?,
+        query: String?,
+        sortDescending: Boolean
+    ): Flow<List<AlertItem>> {
+        val q = query?.trim()?.takeIf { it.isNotBlank() }
+        val flow = if (sortDescending) {
+            dao.observeFilteredDesc(threatType, fromIso, toIso, q)
+        } else {
+            dao.observeFilteredAsc(threatType, fromIso, toIso, q)
+        }
+        return flow.map { list -> list.map { it.toApiModel() } }
     }
 }
 

@@ -18,20 +18,28 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +60,9 @@ import com.example.alertapp.ui.formatThreatTypeLabel
 import com.example.alertapp.ui.theme.OnDarkMuted
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,12 +72,30 @@ fun AlertsListScreen(
 ) {
     val context = LocalContext.current
     val repo = remember { AlertsRepository(context.applicationContext) }
-    var alerts by remember { mutableStateOf<List<AlertItem>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var isRefreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var refreshTrigger by remember { mutableStateOf(0) }
     val pullRefreshState = rememberPullToRefreshState()
+
+    // Filters
+    var typeFilter by rememberSaveable { mutableStateOf<String?>(null) } // null = all
+    var datePresetOrdinal by rememberSaveable { mutableStateOf(DatePreset.ALL.ordinal) }
+    var query by rememberSaveable { mutableStateOf("") }
+    var sortDescending by rememberSaveable { mutableStateOf(true) }
+    val datePreset = remember(datePresetOrdinal) { DatePreset.entries[datePresetOrdinal] }
+
+    val (fromIso, toIso) = remember(datePreset) { datePreset.toIsoRange() }
+
+    val alerts: List<AlertItem> by repo
+        .observeAlertsFiltered(
+            threatType = typeFilter,
+            fromIso = fromIso,
+            toIso = toIso,
+            query = query,
+            sortDescending = sortDescending
+        )
+        .collectAsState(initial = emptyList())
 
     LaunchedEffect(refreshTrigger) {
         val isPullOrButton = refreshTrigger > 0
@@ -76,21 +105,11 @@ fun AlertsListScreen(
             loading = true
         }
         error = null
-        // 1) Show cached data immediately (if any)
-        val cached = withContext(Dispatchers.IO) { repo.getCachedAlerts() }
-        if (cached.isNotEmpty()) alerts = cached
-
-        // 2) Refresh from network and update cache
+        // Refresh from network and update cache; UI reads from Room (Flow)
         try {
-            val fresh = withContext(Dispatchers.IO) { repo.refreshAlertsFromNetwork() }
-            // Не затирати список порожньою відповіддю після pull-to-refresh (часта причина «все зникло»).
-            if (fresh.isNotEmpty() || alerts.isEmpty()) {
-                alerts = fresh
-            }
+            withContext(Dispatchers.IO) { repo.refreshAlertsFromNetwork() }
         } catch (e: Exception) {
-            if (alerts.isEmpty()) {
-                error = e.message ?: "Błąd sieci"
-            }
+            error = e.message ?: "Błąd sieci"
         } finally {
             loading = false
             isRefreshing = false
@@ -144,6 +163,18 @@ fun AlertsListScreen(
                     Arrangement.spacedBy(0.dp)
                 }
             ) {
+                item {
+                    FiltersPanel(
+                        typeFilter = typeFilter,
+                        onTypeFilterChange = { typeFilter = it },
+                        datePreset = datePreset,
+                        onDatePresetChange = { datePresetOrdinal = it.ordinal },
+                        query = query,
+                        onQueryChange = { query = it },
+                        sortDescending = sortDescending,
+                        onSortChange = { sortDescending = it }
+                    )
+                }
                 when {
                     loading -> item {
                         Box(
@@ -190,6 +221,137 @@ fun AlertsListScreen(
         }
     }
 }
+
+private enum class DatePreset(val label: String) {
+    ALL("Wszystkie"),
+    TODAY("Dzisiaj"),
+    DAYS_7("7 dni"),
+    DAYS_30("30 dni");
+
+    fun toIsoRange(): Pair<String?, String?> {
+        if (this == ALL) return null to null
+        val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val cal = Calendar.getInstance()
+        // toIso = start of tomorrow
+        val toCal = cal.clone() as Calendar
+        toCal.add(Calendar.DAY_OF_YEAR, 1)
+        val toIso = "${fmt.format(toCal.time)}T00:00:00"
+
+        val fromCal = cal.clone() as Calendar
+        when (this) {
+            TODAY -> {
+                // today start
+            }
+            DAYS_7 -> fromCal.add(Calendar.DAY_OF_YEAR, -6)
+            DAYS_30 -> fromCal.add(Calendar.DAY_OF_YEAR, -29)
+            ALL -> {}
+        }
+        val fromIso = "${fmt.format(fromCal.time)}T00:00:00"
+        return fromIso to toIso
+    }
+}
+
+@Composable
+private fun FiltersPanel(
+    typeFilter: String?,
+    onTypeFilterChange: (String?) -> Unit,
+    datePreset: DatePreset,
+    onDatePresetChange: (DatePreset) -> Unit,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    sortDescending: Boolean,
+    onSortChange: (Boolean) -> Unit
+) {
+    var typeMenu by remember { mutableStateOf(false) }
+    var dateMenu by remember { mutableStateOf(false) }
+    var sortMenu by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Box {
+                    FilledTonalButton(
+                        onClick = { typeMenu = true },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        val selected = typeFilter?.replaceFirstChar { ch ->
+                            if (ch.isLowerCase()) ch.uppercase() else ch.toString()
+                        }
+                        Text(if (selected.isNullOrBlank()) "Typ: Wszystkie" else "Typ: $selected")
+                    }
+                DropdownMenu(expanded = typeMenu, onDismissRequest = { typeMenu = false }) {
+                    DropdownMenuItem(text = { Text("Wszystkie") }, onClick = {
+                        onTypeFilterChange(null); typeMenu = false
+                    })
+                    listOf("fire", "fight", "smoke").forEach { t ->
+                        val label = t.replaceFirstChar { ch ->
+                            if (ch.isLowerCase()) ch.uppercase() else ch.toString()
+                        }
+                        DropdownMenuItem(text = { Text(label) }, onClick = {
+                            onTypeFilterChange(t); typeMenu = false
+                        })
+                    }
+                }
+            }
+                Box {
+                    FilledTonalButton(
+                        onClick = { dateMenu = true },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text("Data: ${datePreset.label}")
+                    }
+                DropdownMenu(expanded = dateMenu, onDismissRequest = { dateMenu = false }) {
+                    DatePreset.entries.forEach { preset ->
+                        DropdownMenuItem(text = { Text(preset.label) }, onClick = {
+                            onDatePresetChange(preset); dateMenu = false
+                        })
+                    }
+                }
+            }
+        }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Box {
+                    OutlinedButton(
+                        onClick = { sortMenu = true },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(if (sortDescending) "Sortowanie: nowe" else "Sortowanie: stare")
+                    }
+                DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
+                    DropdownMenuItem(text = { Text("Najnowsze") }, onClick = {
+                        onSortChange(true); sortMenu = false
+                    })
+                    DropdownMenuItem(text = { Text("Najstarsze") }, onClick = {
+                        onSortChange(false); sortMenu = false
+                    })
+                }
+            }
+        }
+
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Szukaj") },
+                singleLine = true
+            )
+        }
+    }
+}
+
 
 @Composable
 private fun AlertListItem(alert: AlertItem, onClick: () -> Unit) {
