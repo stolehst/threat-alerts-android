@@ -21,6 +21,8 @@ android {
         versionName = "1.0"
         buildConfigField("String", "API_BASE_URL", "\"https://threatalertsbackend.onrender.com/\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Ship English resources only (smaller APK; UI stays English regardless of device locale).
+        resourceConfigurations += listOf("en")
     }
 
     buildTypes {
@@ -61,11 +63,11 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    // WorkManager для відправки токена на бекенд
+    // WorkManager: send token to backend
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
-    // ExoPlayer для відео
+    // ExoPlayer (video playback)
     implementation("androidx.media3:media3-exoplayer:1.4.1")
     implementation("androidx.media3:media3-ui:1.4.1")
 

@@ -1,6 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AlertApp</string>
-    <string name="notification_channel_alerts">Алерти безпеки</string>
-    <string name="notification_alert_title">Алерт</string>
-    <string name="notification_alert_body">Новий алерт безпеки</string>
+
+    <string name="notification_channel_alerts">Security alerts</string>
+    <string name="notification_alert_title">Alert</string>
+    <string name="notification_alert_body">New security alert</string>
+
+    <string name="offline_banner_cached_alerts">No internet — showing saved alerts</string>
+    <string name="action_refresh">Refresh</string>
+
+    <string name="error_no_internet">No internet connection</string>
+    <string name="error_unknown_alert">Unknown alert</string>
+    <string name="error_invalid_alert_id">Invalid alert ID</string>
+    <string name="error_no_alert_data">No alert data</string>
+    <string name="error_network_generic">Network error</string>
+    <string name="error_invalid_code">Invalid code</string>
+    <string name="error_video_unavailable">Video unavailable</string>
+    <string name="error_load_failed">Failed to load</string>
+    <string name="empty_alerts">No alerts</string>
+
+    <string name="title_alert_details">Alert details</string>
+    <string name="title_activation">Activation</string>
+    <string name="title_settings">Settings</string>
+    <string name="title_video_alert">Alert</string>
+
+    <string name="activation_enter_code">Enter your activation code</string>
+    <string name="activation_code_label">Code</string>
+    <string name="activation_button">Activate</string>
+
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_logout_clear">Log out / Clear activation</string>
+    <string name="settings_reregister_device">Re-register device</string>
+
+    <string name="detail_label_id">ID</string>
+    <string name="detail_label_threat_type">Threat type</string>
+    <string name="detail_label_detected_at">Detected at</string>
+    <string name="detail_label_created_at">Created</string>
+    <string name="detail_video_path_label">Video path (server)</string>
+    <string name="detail_play_video">Play video</string>
+
+    <string name="threat_type_all">All</string>
+    <string name="filter_type_all">Type: All</string>
+    <string name="filter_type_named">Type: %1$s</string>
+    <string name="filter_date_label">Date: %1$s</string>
+    <string name="sort_newest_first">Sort: newest first</string>
+    <string name="sort_oldest_first">Sort: oldest first</string>
+    <string name="sort_menu_newest">Newest first</string>
+    <string name="sort_menu_oldest">Oldest first</string>
+    <string name="search_label">Search</string>
+
+    <string name="date_preset_all">All</string>
+    <string name="date_preset_today">Today</string>
+    <string name="date_preset_7_days">Last 7 days</string>
+    <string name="date_preset_30_days">Last 30 days</string>
+
+    <string name="cd_back">Back</string>
+    <string name="cd_open_settings">Open settings</string>
 </resources>

@@ -25,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,10 +45,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.annotation.StringRes
 import com.example.alertapp.R
 import com.example.alertapp.api.AlertItem
 import com.example.alertapp.repo.AlertsRepository
@@ -58,6 +62,7 @@ import com.example.alertapp.ui.theme.OnDarkBackground
 import com.example.alertapp.ui.formatDetectedAtLabel
 import com.example.alertapp.ui.formatThreatTypeLabel
 import com.example.alertapp.ui.theme.OnDarkMuted
+import com.example.alertapp.ui.rememberIsOnline
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -77,6 +82,8 @@ fun AlertsListScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var refreshTrigger by remember { mutableStateOf(0) }
     val pullRefreshState = rememberPullToRefreshState()
+    val isOnline = rememberIsOnline()
+    val settingsContentDescription = stringResource(R.string.cd_open_settings)
 
     // Filters
     var typeFilter by rememberSaveable { mutableStateOf<String?>(null) } // null = all
@@ -109,12 +116,12 @@ fun AlertsListScreen(
         try {
             withContext(Dispatchers.IO) { repo.refreshAlertsFromNetwork() }
         } catch (e: Exception) {
-            // Якщо в Room є хоч один алерт — показуємо кеш, а не сиру помилку DNS (літак тощо)
+            // If Room has alerts, keep showing cache instead of a raw DNS-style error (e.g. airplane mode).
             val hasAnyCached = withContext(Dispatchers.IO) {
                 repo.getCachedAlerts().isNotEmpty()
             }
             if (!hasAnyCached) {
-                error = "Brak połączenia z internetem"
+                error = context.getString(R.string.error_no_internet)
             }
         } finally {
             loading = false
@@ -134,7 +141,7 @@ fun AlertsListScreen(
                         modifier = Modifier.clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
-                            onClick = { /* поглинаємо тап, щоб не потрапляв у контент/pull під шапкою */ }
+                            onClick = { /* absorb tap so it does not pass through to content/pull below */ }
                         )
                     )
                 },
@@ -143,23 +150,34 @@ fun AlertsListScreen(
                     titleContentColor = OnDarkBackground
                 ),
                 actions = {
-                    IconButton(onClick = onOpenSettings) {
+                    IconButton(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.semantics { contentDescription = settingsContentDescription }
+                    ) {
                         Text("⚙", style = MaterialTheme.typography.titleLarge, color = OnDarkBackground)
                     }
                 }
             )
         }
     ) { padding ->
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { refreshTrigger++ },
-            state = pullRefreshState,
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .background(DarkBackground)
         ) {
-            // Pull-to-refresh потребує прокручуваного контенту; інакше не працює при «Brak alertów» / помилці / завантаженні
+            if (!isOnline) {
+                OfflineCachedAlertsBanner(onRefresh = { refreshTrigger++ })
+            }
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { refreshTrigger++ },
+                state = pullRefreshState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+            // Pull-to-refresh needs scrollable content; otherwise it fails on empty/error/loading states.
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
@@ -178,7 +196,14 @@ fun AlertsListScreen(
                         query = query,
                         onQueryChange = { query = it },
                         sortDescending = sortDescending,
-                        onSortChange = { sortDescending = it }
+                        onSortChange = { sortDescending = it },
+                        threatTypeAllLabel = stringResource(R.string.threat_type_all),
+                        filterTypeAllLabel = stringResource(R.string.filter_type_all),
+                        sortNewestLabel = stringResource(R.string.sort_newest_first),
+                        sortOldestLabel = stringResource(R.string.sort_oldest_first),
+                        sortMenuNewest = stringResource(R.string.sort_menu_newest),
+                        sortMenuOldest = stringResource(R.string.sort_menu_oldest),
+                        searchLabel = stringResource(R.string.search_label)
                     )
                 }
                 when {
@@ -210,7 +235,7 @@ fun AlertsListScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Brak alertów",
+                                text = stringResource(R.string.empty_alerts),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = OnDarkMuted
                             )
@@ -224,15 +249,49 @@ fun AlertsListScreen(
                     }
                 }
             }
+            }
         }
     }
 }
 
-private enum class DatePreset(val label: String) {
-    ALL("Wszystkie"),
-    TODAY("Dzisiaj"),
-    DAYS_7("7 dni"),
-    DAYS_30("30 dni");
+@Composable
+private fun OfflineCachedAlertsBanner(onRefresh: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.92f),
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.offline_banner_cached_alerts),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(
+                onClick = onRefresh,
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    stringResource(R.string.action_refresh),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
+private enum class DatePreset(@StringRes val labelRes: Int) {
+    ALL(R.string.date_preset_all),
+    TODAY(R.string.date_preset_today),
+    DAYS_7(R.string.date_preset_7_days),
+    DAYS_30(R.string.date_preset_30_days);
 
     fun toIsoRange(): Pair<String?, String?> {
         if (this == ALL) return null to null
@@ -266,7 +325,14 @@ private fun FiltersPanel(
     query: String,
     onQueryChange: (String) -> Unit,
     sortDescending: Boolean,
-    onSortChange: (Boolean) -> Unit
+    onSortChange: (Boolean) -> Unit,
+    threatTypeAllLabel: String,
+    filterTypeAllLabel: String,
+    sortNewestLabel: String,
+    sortOldestLabel: String,
+    sortMenuNewest: String,
+    sortMenuOldest: String,
+    searchLabel: String
 ) {
     var typeMenu by remember { mutableStateOf(false) }
     var dateMenu by remember { mutableStateOf(false) }
@@ -295,10 +361,13 @@ private fun FiltersPanel(
                         val selected = typeFilter?.replaceFirstChar { ch ->
                             if (ch.isLowerCase()) ch.uppercase() else ch.toString()
                         }
-                        Text(if (selected.isNullOrBlank()) "Typ: Wszystkie" else "Typ: $selected")
+                        Text(
+                            if (selected.isNullOrBlank()) filterTypeAllLabel
+                            else stringResource(R.string.filter_type_named, selected)
+                        )
                     }
                 DropdownMenu(expanded = typeMenu, onDismissRequest = { typeMenu = false }) {
-                    DropdownMenuItem(text = { Text("Wszystkie") }, onClick = {
+                    DropdownMenuItem(text = { Text(threatTypeAllLabel) }, onClick = {
                         onTypeFilterChange(null); typeMenu = false
                     })
                     listOf("fire", "fight", "smoke").forEach { t ->
@@ -316,13 +385,21 @@ private fun FiltersPanel(
                         onClick = { dateMenu = true },
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Text("Data: ${datePreset.label}")
+                        Text(
+                            stringResource(
+                                R.string.filter_date_label,
+                                stringResource(datePreset.labelRes)
+                            )
+                        )
                     }
                 DropdownMenu(expanded = dateMenu, onDismissRequest = { dateMenu = false }) {
                     DatePreset.entries.forEach { preset ->
-                        DropdownMenuItem(text = { Text(preset.label) }, onClick = {
-                            onDatePresetChange(preset); dateMenu = false
-                        })
+                        DropdownMenuItem(
+                            text = { Text(stringResource(preset.labelRes)) },
+                            onClick = {
+                                onDatePresetChange(preset); dateMenu = false
+                            }
+                        )
                     }
                 }
             }
@@ -334,13 +411,13 @@ private fun FiltersPanel(
                         onClick = { sortMenu = true },
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Text(if (sortDescending) "Sortowanie: nowe" else "Sortowanie: stare")
+                        Text(if (sortDescending) sortNewestLabel else sortOldestLabel)
                     }
                 DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
-                    DropdownMenuItem(text = { Text("Najnowsze") }, onClick = {
+                    DropdownMenuItem(text = { Text(sortMenuNewest) }, onClick = {
                         onSortChange(true); sortMenu = false
                     })
-                    DropdownMenuItem(text = { Text("Najstarsze") }, onClick = {
+                    DropdownMenuItem(text = { Text(sortMenuOldest) }, onClick = {
                         onSortChange(false); sortMenu = false
                     })
                 }
@@ -351,7 +428,7 @@ private fun FiltersPanel(
                 value = query,
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Szukaj") },
+                label = { Text(searchLabel) },
                 singleLine = true
             )
         }

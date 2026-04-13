@@ -26,7 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.alertapp.R
 import com.example.alertapp.api.ActivateRequest
 import com.example.alertapp.api.ApiProvider
 import com.example.alertapp.auth.AuthTokenStore
@@ -44,6 +46,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun ActivationScreen(onActivated: () -> Unit) {
     val context = LocalContext.current
+    val appContext = context.applicationContext
     val scope = rememberCoroutineScope()
     var code by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
@@ -60,16 +63,16 @@ fun ActivationScreen(onActivated: () -> Unit) {
                     if (resp.isSuccessful && resp.body()?.api_token?.isNotBlank() == true) {
                         resp.body()!!.api_token to null
                     } else {
-                        null to "Nieprawidłowy kod"
+                        null to appContext.getString(R.string.error_invalid_code)
                     }
                 } catch (e: Exception) {
-                    null to (e.message ?: "Błąd sieci")
+                    null to (e.message ?: appContext.getString(R.string.error_network_generic))
                 }
             }
             val token = result.first
             val err = result.second
             if (!token.isNullOrBlank()) {
-                // Інакше в Room лишаються алерти попереднього коду активації
+                // Otherwise Room would keep alerts from a previous activation code.
                 withContext(Dispatchers.IO) { AlertRoomCache.clearAlerts(context) }
                 AuthTokenStore.setApiToken(context, token)
                 val fcm = DeviceTokenHolder.getToken(context)
@@ -88,7 +91,7 @@ fun ActivationScreen(onActivated: () -> Unit) {
         containerColor = DarkBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Aktywacja", color = OnDarkBackground) },
+                title = { Text(stringResource(R.string.title_activation), color = OnDarkBackground) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = CardSurface,
                     titleContentColor = OnDarkBackground
@@ -111,14 +114,14 @@ fun ActivationScreen(onActivated: () -> Unit) {
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        "Wprowadź kod aktywacyjny",
+                        stringResource(R.string.activation_enter_code),
                         style = MaterialTheme.typography.titleMedium,
                         color = OnDarkBackground
                     )
                     OutlinedTextField(
                         value = code,
                         onValueChange = { code = it },
-                        label = { Text("Kod") },
+                        label = { Text(stringResource(R.string.activation_code_label)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -133,7 +136,7 @@ fun ActivationScreen(onActivated: () -> Unit) {
                         if (loading) {
                             CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.padding(2.dp))
                         } else {
-                            Text("Aktywuj")
+                            Text(stringResource(R.string.activation_button))
                         }
                     }
                 }

@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        // Якщо відкрили з пушу — можна оновити навігацію (опційно через ViewModel/state)
+        // Opened from a push notification; navigation refresh could go here (e.g. ViewModel/state).
     }
 
     private fun requestFcmTokenAndRegister() {

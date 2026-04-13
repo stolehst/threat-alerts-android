@@ -9,8 +9,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Відправляє FCM-токен на бекенд (POST /api/device/register).
- * Викликається при onNewToken і при першому запуску / з налаштувань.
+ * Sends the FCM token to the backend (POST /api/device/register).
+ * Runs on onNewToken, first launch after activation, and from Settings.
  */
 class DeviceRegistrationWorker(
     context: Context,

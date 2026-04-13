@@ -32,7 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.alertapp.R
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.example.alertapp.api.AlertItem
@@ -60,16 +62,18 @@ fun AlertDetailScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
+    val res = context.applicationContext.resources
+
     LaunchedEffect(alertId) {
         if (alertId.isBlank()) {
             loading = false
-            error = "Nieznany alert"
+            error = res.getString(R.string.error_unknown_alert)
             return@LaunchedEffect
         }
         val id = alertId.toIntOrNull()
         if (id == null) {
             loading = false
-            error = "Nieprawidłowe ID alertu"
+            error = res.getString(R.string.error_invalid_alert_id)
             return@LaunchedEffect
         }
         loading = true
@@ -82,9 +86,9 @@ fun AlertDetailScreen(
         try {
             val fresh = withContext(Dispatchers.IO) { repo.refreshAlertFromNetwork(id) }
             alert = fresh
-            if (alert == null) error = "Brak danych alertu"
+            if (alert == null) error = res.getString(R.string.error_no_alert_data)
         } catch (e: Exception) {
-            if (alert == null) error = e.message ?: "Błąd sieci"
+            if (alert == null) error = e.message ?: res.getString(R.string.error_network_generic)
         } finally {
             loading = false
         }
@@ -94,12 +98,12 @@ fun AlertDetailScreen(
         containerColor = DarkBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Szczegóły alertu", color = OnDarkBackground) },
+                title = { Text(stringResource(R.string.title_alert_details), color = OnDarkBackground) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Wróć",
+                            contentDescription = stringResource(R.string.cd_back),
                             modifier = Modifier.size(28.dp),
                             tint = OnDarkBackground
                         )
@@ -140,23 +144,23 @@ fun AlertDetailScreen(
                         colors = CardDefaults.cardColors(containerColor = CardSurface)
                     ) {
                         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            DetailRow(label = "ID", value = "#${a.id}")
+                            DetailRow(label = stringResource(R.string.detail_label_id), value = "#${a.id}")
                             DetailRow(
-                                label = "Typ zagrożenia",
+                                label = stringResource(R.string.detail_label_threat_type),
                                 value = formatThreatTypeLabel(a.threat_type),
                                 valueColor = AlertRed
                             )
                             DetailRow(
-                                label = "Czas wykrycia",
+                                label = stringResource(R.string.detail_label_detected_at),
                                 value = formatDetectedAtLabel(a.detected_at)
                             )
                             DetailRow(
-                                label = "Utworzono",
+                                label = stringResource(R.string.detail_label_created_at),
                                 value = formatDetectedAtLabel(a.created_at)
                             )
                             if (a.video_path.isNotBlank()) {
                                 Text(
-                                    text = "Ścieżka wideo (serwer)",
+                                    text = stringResource(R.string.detail_video_path_label),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = OnDarkMuted
                                 )
@@ -173,7 +177,7 @@ fun AlertDetailScreen(
                         onClick = onOpenVideo,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Odtwórz wideo")
+                        Text(stringResource(R.string.detail_play_video))
                     }
                 }
             }

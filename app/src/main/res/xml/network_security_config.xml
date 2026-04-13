@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Дозволяємо HTTP тільки до локального бекенду 10.0.2.2 (емулятор -> хост) -->
+    <!-- Allow cleartext HTTP only to local backend 10.0.2.2 (emulator -> host) -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">10.0.2.2</domain>
     </domain-config>

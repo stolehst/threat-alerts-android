@@ -24,7 +24,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.alertapp.R
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -47,11 +49,12 @@ fun AlertVideoScreen(alertId: String, onBack: () -> Unit) {
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
+    val appContext = context.applicationContext
 
     LaunchedEffect(alertId) {
         if (alertId.isBlank()) {
             loading = false
-            error = "Nieznany alert"
+            error = appContext.getString(R.string.error_unknown_alert)
             return@LaunchedEffect
         }
         loading = true
@@ -60,19 +63,19 @@ fun AlertVideoScreen(alertId: String, onBack: () -> Unit) {
             try {
                 val id = alertId.toIntOrNull()
                 if (id == null) {
-                    error = "Nieprawidłowe ID alertu"
+                    error = appContext.getString(R.string.error_invalid_alert_id)
                     loading = false
                     return@withContext
                 }
                 val response = ApiProvider.getAlertApi(context).getAlertVideoUrl(id)
                 if (response.isSuccessful) {
                     videoUrl = response.body()?.url
-                    if (videoUrl.isNullOrBlank()) error = "Wideo niedostępne"
+                    if (videoUrl.isNullOrBlank()) error = appContext.getString(R.string.error_video_unavailable)
                 } else {
-                    error = "Błąd ładowania"
+                    error = appContext.getString(R.string.error_load_failed)
                 }
             } catch (e: Exception) {
-                error = e.message ?: "Błąd sieci"
+                error = e.message ?: appContext.getString(R.string.error_network_generic)
             }
             loading = false
         }
@@ -82,12 +85,12 @@ fun AlertVideoScreen(alertId: String, onBack: () -> Unit) {
         containerColor = DarkBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Alert", color = OnDarkBackground) },
+                title = { Text(stringResource(R.string.title_video_alert), color = OnDarkBackground) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Wróć",
+                            contentDescription = stringResource(R.string.cd_back),
                             modifier = Modifier.size(28.dp),
                             tint = OnDarkBackground
                         )

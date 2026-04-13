@@ -23,7 +23,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.alertapp.R
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.example.alertapp.auth.AuthTokenStore
@@ -48,12 +50,12 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit) {
         containerColor = DarkBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Ustawienia", color = OnDarkBackground) },
+                title = { Text(stringResource(R.string.title_settings), color = OnDarkBackground) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Wróć",
+                            contentDescription = stringResource(R.string.cd_back),
                             modifier = Modifier.size(28.dp),
                             tint = OnDarkBackground
                         )
@@ -77,7 +79,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Powiadomienia",
+                    stringResource(R.string.settings_notifications),
                     modifier = Modifier.weight(1f),
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -96,7 +98,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit) {
                 },
                 modifier = Modifier.padding(top = 8.dp)
             ) {
-                Text("Wyloguj / Usuń aktywację")
+                Text(stringResource(R.string.settings_logout_clear))
             }
 
             androidx.compose.material3.Button(
@@ -108,7 +110,7 @@ fun SettingsScreen(onBack: () -> Unit, onLogout: () -> Unit) {
                 },
                 modifier = Modifier.padding(top = 16.dp)
             ) {
-                Text("Ponownie zarejestruj urządzenie")
+                Text(stringResource(R.string.settings_reregister_device))
             }
         }
     }
