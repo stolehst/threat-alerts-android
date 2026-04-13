@@ -109,7 +109,13 @@ fun AlertsListScreen(
         try {
             withContext(Dispatchers.IO) { repo.refreshAlertsFromNetwork() }
         } catch (e: Exception) {
-            error = e.message ?: "Błąd sieci"
+            // Якщо в Room є хоч один алерт — показуємо кеш, а не сиру помилку DNS (літак тощо)
+            val hasAnyCached = withContext(Dispatchers.IO) {
+                repo.getCachedAlerts().isNotEmpty()
+            }
+            if (!hasAnyCached) {
+                error = "Brak połączenia z internetem"
+            }
         } finally {
             loading = false
             isRefreshing = false
@@ -186,7 +192,7 @@ fun AlertsListScreen(
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
                     }
-                    error != null -> item {
+                    error != null && alerts.isEmpty() -> item {
                         Box(
                             modifier = Modifier.fillParentMaxSize(),
                             contentAlignment = Alignment.Center
