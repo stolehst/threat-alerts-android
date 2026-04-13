@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -275,6 +276,7 @@ private fun OfflineCachedAlertsBanner(onRefresh: () -> Unit) {
             )
             TextButton(
                 onClick = onRefresh,
+                modifier = Modifier.minimumInteractiveComponentSize(),
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp)
             ) {
                 Text(
